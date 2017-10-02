@@ -4,6 +4,8 @@ contract BettingContract {
 	/* Standard state variables */
 	address owner;
 	address public gamblerA;
+	bool public gamblerASet;
+	bool public gamblerBSet;
 	address public gamblerB;
 	address public oracle;
 	uint[] outcomes;
@@ -26,31 +28,42 @@ contract BettingContract {
 
 	/* Uh Oh, what are these? */
 	modifier OwnerOnly() {
-		require(msg.sender == owner);
-		_;
+		if (msg.sender == owner){
+			_;
+		}
 	}
 	modifier OracleOnly() {
-		require(msg.sender == oracle);
-		_;
+		if (msg.sender == oracle){
+			_;
+		}
 	}
 
 	/* Constructor function, where owner and outcomes are set */
 	function BettingContract(uint[] _outcomes) {
 		owner = msg.sender;
 		outcomes = _outcomes;
+		gamblerASet = false;
+		gamblerBSet = false;
 	}
 
 	/* Owner chooses their trusted Oracle */
 	function chooseOracle(address _oracle) OwnerOnly() returns (address) {
 		oracle = _oracle;
+		return oracle;
 	}
 
 	/* Gamblers place their bets, preferably after calling checkOutcomes */
 	function makeBet(uint _outcome) payable returns (bool) {
-		if (gamblerA == 0) {
+		if (!gamblerASet) {
 			gamblerA = msg.sender;
-		} else if (gamblerB == 0) {
-			gamblerB = msg.sender;
+			gamblerASet = true;
+		} else if (!gamblerBSet) {
+			if (msg.sender == gamblerA) {
+				return false; 
+			} else {
+				gamblerB = msg.sender;
+				gamblerBSet = true;
+			}
 		} else {
 			return false;
 		}
@@ -107,6 +120,6 @@ contract BettingContract {
 
 	/* Fallback function */
 	function() {
-		revert();
 	}
+
 }
